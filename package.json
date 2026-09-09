@@ -3,7 +3,7 @@
   "displayName": "EPUB Reader",
   "description": "在 VS Code 中阅读本地 EPUB 电子书：真分页阅读、自定义排版、自动记忆阅读进度。像打开普通文件一样双击即可阅读。",
   "version": "1.0.0",
-  "publisher": "local",
+  "publisher": "HangzhouNo1Lover",
   "author": {
     "name": "转塘第一大作手"
   },
@@ -307,8 +307,8 @@
     "test": "node ./tools/test-parse.js && node ./tools/run-browser-check.js",
     "test:parse": "node ./tools/test-parse.js",
     "test:browser": "node ./tools/run-browser-check.js",
-    "package": "npx --yes @vscode/vsce@latest package --no-git-tag-version --no-update-package-json --out vscode-epub.vsix",
-    "install-local": "code --install-extension ./vscode-epub.vsix --force",
+    "package": "npx --yes @vscode/vsce@latest package --no-git-tag-version --no-update-package-json --out epubReader.vsix",
+    "install-local": "code --install-extension ./epubReader.vsix --force",
     "publish:marketplace": "npx --yes @vscode/vsce@latest publish --no-git-tag-version --no-update-package-json"
   }
 }

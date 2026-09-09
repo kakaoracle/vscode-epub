@@ -8,9 +8,9 @@
 
 _你以为我是 IDE？其实我是……电子书阅读器哒！(๑•̀ㅂ•́)و✧_
 
-[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/kakaoracle.vscode-epub?style=for-the-badge&logo=visualstudiocode&logoColor=white&label=Marketplace&color=0078D7)](https://marketplace.visualstudio.com/items?itemName=kakaoracle.vscode-epub)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/kakaoracle.vscode-epub?style=for-the-badge&color=2ea043)](https://marketplace.visualstudio.com/items?itemName=kakaoracle.vscode-epub)
-[![Rating](https://img.shields.io/visual-studio-marketplace/stars/kakaoracle.vscode-epub?style=for-the-badge&color=f0a020)](https://marketplace.visualstudio.com/items?itemName=kakaoracle.vscode-epub&ssr=false#review-details)
+[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/HangzhouNo1Lover.vscode-epub?style=for-the-badge&logo=visualstudiocode&logoColor=white&label=Marketplace&color=0078D7)](https://marketplace.visualstudio.com/items?itemName=HangzhouNo1Lover.vscode-epub)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/HangzhouNo1Lover.vscode-epub?style=for-the-badge&color=2ea043)](https://marketplace.visualstudio.com/items?itemName=HangzhouNo1Lover.vscode-epub)
+[![Rating](https://img.shields.io/visual-studio-marketplace/stars/HangzhouNo1Lover.vscode-epub?style=for-the-badge&color=f0a020)](https://marketplace.visualstudio.com/items?itemName=HangzhouNo1Lover.vscode-epub&ssr=false#review-details)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
 [![Size](https://img.shields.io/badge/体积-~40%20KB-blueviolet?style=for-the-badge)](https://github.com/kakaoracle/vscode-epub)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.74.0+-blue?style=for-the-badge&logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
@@ -94,7 +94,7 @@ _你以为我是 IDE？其实我是……电子书阅读器哒！(๑•̀ㅂ•
 在 VS Code 中按 `Ctrl/Cmd + P`，粘贴：
 
 ```
-ext install kakaoracle.vscode-epub
+ext install HangzhouNo1Lover.vscode-epub
 ```
 
 或者打开扩展面板（`Ctrl/Cmd + Shift + X`）搜索 **EPUB Reader**。
