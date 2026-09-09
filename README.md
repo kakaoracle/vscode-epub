@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/kakaoracle/vscode-epub/main/media/icon.png" alt="EPUB Reader" width="128" />
+<img src="https://raw.githubusercontent.com/kakaoracle/vscode-epub/main/media/icon.png" alt="EPUB Reader Pro" width="128" />
 
-# 📖 EPUB Reader
+# 📖 EPUB Reader Pro
 
 **在 VS Code 里，正大光明地看书。**
 
@@ -97,7 +97,7 @@ _你以为我是 IDE？其实我是……电子书阅读器哒！(๑•̀ㅂ•
 ext install HangzhouNo1Lover.vscode-epub
 ```
 
-或者打开扩展面板（`Ctrl/Cmd + Shift + X`）搜索 **EPUB Reader**。
+或者打开扩展面板（`Ctrl/Cmd + Shift + X`）搜索 **EPUB Reader Pro**。
 
 **方式二 —— 手动安装 VSIX**
 

@@ -1,6 +1,6 @@
 {
   "name": "vscode-epub",
-  "displayName": "EPUB Reader",
+  "displayName": "EPUB Reader Pro",
   "description": "在 VS Code 中阅读本地 EPUB 电子书：真分页阅读、自定义排版、自动记忆阅读进度。像打开普通文件一样双击即可阅读。",
   "version": "1.0.0",
   "publisher": "HangzhouNo1Lover",
