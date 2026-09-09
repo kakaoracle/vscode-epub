@@ -4,6 +4,7 @@ samples/**
 .github/**
 .git/**
 .gitignore
+.workbuddy/**
 **/*.map
 **/*.vsix
 **/node_modules/**
