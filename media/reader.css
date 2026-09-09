@@ -1,0 +1,517 @@
+/* EPUB Reader — 阅读器界面
+   主题变量由 JS 注入，配色跟随 VS Code 主题（vscode-light / vscode-dark）或用户选择 */
+
+:root {
+  --reader-fg: #2b2b2b;
+  --reader-bg: #ffffff;
+  --reader-muted: #8a8a8a;
+  --ui-bg: #f3f3f3;
+  --ui-bg-alt: #e8e8e8;
+  --ui-fg: #333333;
+  --ui-border: rgba(0, 0, 0, 0.12);
+  --ui-hover: rgba(0, 0, 0, 0.06);
+  --ui-active: rgba(0, 0, 0, 0.12);
+  --accent: #0a7bd4;
+  --font-size: 18px;
+  --line-height: 1.8;
+  --para-spacing: 0.8em;
+  --page-pad: 48px;
+  --col-gap: 40px;
+  --text-align: justify;
+  --font-family: -apple-system, "Segoe UI", sans-serif;
+  --topbar-h: 38px;
+  --statusbar-h: 26px;
+}
+
+body.vscode-dark {
+  --ui-bg: #252526;
+  --ui-bg-alt: #2d2d2e;
+  --ui-fg: #cccccc;
+  --ui-border: rgba(255, 255, 255, 0.12);
+  --ui-hover: rgba(255, 255, 255, 0.08);
+  --ui-active: rgba(255, 255, 255, 0.16);
+  --accent: #4daafc;
+  --reader-muted: #9a9a9a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--ui-fg);
+  background: var(--reader-bg);
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--reader-bg);
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  flex: 0 0 var(--topbar-h);
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  background: var(--ui-bg);
+  border-bottom: 1px solid var(--ui-border);
+  z-index: 20;
+}
+
+.topbar .title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.topbar .book {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar .chapter {
+  color: var(--reader-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 7px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ui-fg);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.btn:hover {
+  background: var(--ui-hover);
+}
+
+.btn:active {
+  background: var(--ui-active);
+}
+
+.btn.active {
+  background: var(--ui-active);
+  color: var(--accent);
+}
+
+.btn .codicon {
+  font-size: 15px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+/* ---------- 主体 ---------- */
+.body-row {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+/* ---------- 目录侧栏 ---------- */
+.sidebar {
+  flex: 0 0 280px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg);
+  border-right: 1px solid var(--ui-border);
+  overflow: hidden;
+}
+
+.sidebar[hidden] {
+  display: none;
+}
+
+.sidebar-head {
+  padding: 8px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.sidebar-head input {
+  width: 100%;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 5px;
+  background: var(--ui-bg-alt);
+  color: var(--ui-fg);
+  outline: none;
+  font-size: 12px;
+}
+
+.sidebar-head input:focus {
+  border-color: var(--accent);
+}
+
+.toc-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 6px 0 16px;
+}
+
+.toc-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 10px 5px 10px;
+  border: none;
+  background: transparent;
+  color: var(--ui-fg);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toc-item:hover {
+  background: var(--ui-hover);
+}
+
+.toc-item.current {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--ui-hover);
+  font-weight: 600;
+}
+
+/* ---------- 阅读区 ---------- */
+.stage {
+  flex: 1 1 auto;
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--reader-bg);
+}
+
+.viewport {
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  outline: none;
+}
+
+.viewport::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+}
+
+.columns {
+  height: 100%;
+  column-fill: auto;
+  column-width: 400px;
+  column-gap: var(--col-gap);
+  position: relative;
+}
+
+.content {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  color: var(--reader-fg);
+  text-align: var(--text-align);
+  hyphens: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 强制覆盖书籍自带排版，保证字号/行距/颜色/字体设置一定生效 */
+.content,
+.content *:not(svg):not(svg *):not(sup):not(sub) {
+  font-family: var(--font-family) !important;
+  line-height: var(--line-height) !important;
+  color: var(--reader-fg) !important;
+  background-color: transparent !important;
+  border-color: var(--ui-border) !important;
+  font-size: inherit !important;
+}
+
+.content {
+  font-size: var(--font-size) !important;
+}
+
+.content h1 {
+  font-size: 1.7em !important;
+  margin: 1em 0 0.6em !important;
+  line-height: 1.35 !important;
+}
+
+.content h2 {
+  font-size: 1.45em !important;
+  margin: 1em 0 0.55em !important;
+  line-height: 1.4 !important;
+}
+
+.content h3 {
+  font-size: 1.25em !important;
+  margin: 1em 0 0.5em !important;
+}
+
+.content h4,
+.content h5,
+.content h6 {
+  font-size: 1.1em !important;
+  margin: 1em 0 0.5em !important;
+}
+
+.content p,
+.content div,
+.content blockquote,
+.content li,
+.content dd {
+  margin: 0 0 var(--para-spacing) !important;
+}
+
+.content ul,
+.content ol {
+  margin: 0 0 var(--para-spacing) !important;
+  padding-left: 1.6em !important;
+}
+
+.content sup,
+.content sub {
+  font-size: 0.7em !important;
+  line-height: 1 !important;
+}
+
+.content img,
+.content svg,
+.content image {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  margin: 0.6em auto !important;
+}
+
+.content a {
+  color: var(--accent) !important;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.content a:hover {
+  text-decoration: underline;
+}
+
+.content hr {
+  border: none !important;
+  border-top: 1px solid var(--ui-border) !important;
+  margin: 1.2em 0 !important;
+}
+
+.content pre,
+.content code {
+  font-family: Consolas, "Courier New", monospace !important;
+  white-space: pre-wrap !important;
+}
+
+.content table {
+  max-width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+/* 每列左右留白：box-decoration-break 让跨列断开的元素每一段都保留内边距 */
+.content>* {
+  padding-left: var(--page-pad) !important;
+  padding-right: var(--page-pad) !important;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* ---------- 连续滚动模式 ---------- */
+body.mode-scroll .viewport {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.mode-scroll .viewport::-webkit-scrollbar {
+  width: 10px;
+}
+
+body.mode-scroll .viewport::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 5px;
+}
+
+body.mode-scroll .columns {
+  height: auto;
+  min-height: 100%;
+  column-width: auto !important;
+  column-count: 1 !important;
+  column-gap: 0 !important;
+}
+
+/* 底部留白：让最后一行不贴着窗口底边 */
+body.mode-scroll .content::after {
+  content: "";
+  display: block;
+  height: 45vh;
+}
+
+/* ---------- 翻页按钮 ---------- */
+.nav {
+  position: absolute;
+  top: 0;
+  bottom: var(--statusbar-h);
+  width: 46px;
+  border: none;
+  background: transparent;
+  color: var(--ui-fg);
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.25;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 10;
+}
+
+.nav:hover {
+  opacity: 1;
+  background: linear-gradient(to right, var(--ui-hover), transparent);
+}
+
+.nav.next:hover {
+  background: linear-gradient(to left, var(--ui-hover), transparent);
+}
+
+.nav.prev {
+  left: 0;
+}
+
+.nav.next {
+  right: 0;
+}
+
+.nav[disabled] {
+  opacity: 0.08;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ---------- 状态栏 ---------- */
+.statusbar {
+  flex: 0 0 var(--statusbar-h);
+  height: var(--statusbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 11.5px;
+  color: var(--reader-muted);
+  background: var(--ui-bg);
+  border-top: 1px solid var(--ui-border);
+  user-select: text;
+}
+
+.statusbar .progress-bar {
+  flex: 0 0 160px;
+  height: 3px;
+  background: var(--ui-border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-left: 10px;
+}
+
+.statusbar .progress-bar>i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- 设置面板 ---------- */
+.field>label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: var(--ui-fg);
+}
+
+.field .value {
+  color: var(--reader-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--reader-muted);
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+
+/* ---------- 覆盖层 ---------- */
+.mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--reader-bg);
+  color: var(--reader-muted);
+  font-size: 13px;
+  z-index: 50;
+  text-align: center;
+  padding: 20px;
+  line-height: 1.7;
+}
+
+.mask[hidden] {
+  display: none;
+}
+
+.mask.error {
+  color: #d13b3b;
+}
+
+#app.loading .body-row {
+  visibility: hidden;
+}

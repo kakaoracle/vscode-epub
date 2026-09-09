@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>分页与位置记忆验证</title>
+  <link rel="stylesheet" href="../media/reader.css">
+</head>
+
+<body>
+  <!-- 结构与真实阅读器保持一致，确保验证的是真实布局行为 -->
+  <div id="app">
+    <div class="topbar"><span class="book">测试</span></div>
+    <div class="body-row">
+      <main class="stage">
+        <div class="viewport" id="viewport">
+          <div class="columns" id="columns">
+            <div class="content" id="content"></div>
+          </div>
+        </div>
+        <div class="statusbar"><span>状态栏</span></div>
+      </main>
+    </div>
+  </div>
+
+  <pre id="result" style="position:fixed;left:-9999px;">RUNNING</pre>
+
+  <script src="../media/pagination.js"></script>
+  <script>
+    (function () {
+      const results = [];
+      const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
+      const t = (name, fn) => {
+        try { results.push({ name, ok: true, info: fn() || '' }); }
+        catch (err) { results.push({ name, ok: false, error: err.message }); }
+      };
+
+      const viewport = document.getElementById('viewport');
+      const columns = document.getElementById('columns');
+      const content = document.getElementById('content');
+      const P = window.EpubPagination;
+
+      let html = '<h1>分页测试章节</h1>';
+      for (let i = 0; i < 70; i++) {
+        html += '<p>第 ' + (i + 1) + ' 段：' + '这是一段用于测试分页与位置记忆的中文正文内容，长度足够产生多个列与多个屏幕。'.repeat(2) + '</p>';
+      }
+      content.innerHTML = html;
+
+      document.documentElement.style.setProperty('--page-pad', '48px');
+
+      let m1 = null;
+      t('单栏：内容溢出产生多个列', () => {
+        m1 = P.measure(viewport, columns, 1, 40);
+        assert(viewport.scrollWidth > viewport.clientWidth,
+          '未溢出 scrollWidth=' + viewport.scrollWidth + ' clientWidth=' + viewport.clientWidth);
+        assert(m1.totalColumns > 2, '列数过少: ' + m1.totalColumns);
+        assert(m1.screens === m1.totalColumns, '单栏时屏数应等于列数');
+        return { colW: m1.colW, totalColumns: m1.totalColumns, screens: m1.screens, scrollWidth: viewport.scrollWidth };
+      });
+
+      t('翻页：scrollLeft 与屏序号精确对应', () => {
+        P.scrollToScreen(viewport, m1, 3, false);
+        const expected = 3 * P.screenStep(m1);
+        assert(Math.abs(viewport.scrollLeft - expected) <= 2,
+          'scrollLeft=' + viewport.scrollLeft + ' 期望=' + expected);
+        return { scrollLeft: viewport.scrollLeft, expected };
+      });
+
+      let savedOffset = -1;
+      let savedScreen = 3;
+
+      t('诊断：偏移定位细节', () => {
+        P.scrollToScreen(viewport, m1, 3, false);
+        const off = P.currentCharOffset(viewport, content);
+        const loc = P.locationOfOffset(content, off);
+        const range = document.createRange();
+        range.setStart(loc.node, loc.off);
+        range.setEnd(loc.node, Math.min(loc.off + 1, loc.node.length));
+        const rect = range.getBoundingClientRect();
+        const vpRect = viewport.getBoundingClientRect();
+        const docX = rect.left + viewport.scrollLeft - vpRect.left;
+        return {
+          off, docX: +docX.toFixed(1), colW: m1.colW, gap: m1.gap,
+          columnFloat: +(docX / (m1.colW + m1.gap)).toFixed(3),
+          scrollLeft: viewport.scrollLeft,
+          rectLeft: +rect.left.toFixed(1), vpLeft: +vpRect.left.toFixed(1),
+          text: loc.node.nodeValue.slice(Math.max(0, loc.off - 8), loc.off + 12)
+        };
+      });
+
+      t('进度：能取到当前屏的字符偏移（非 0）', () => {
+        savedOffset = P.currentCharOffset(viewport, content);
+        assert(savedOffset > 0, '偏移为 ' + savedOffset + '，说明取样点落在留白里');
+        return { offset: savedOffset };
+      });
+
+      t('进度：翻走后按偏移能回到原屏', () => {
+        P.scrollToScreen(viewport, m1, m1.screens - 1, false);
+        const back = P.screenOfCharOffset(viewport, content, m1, savedOffset);
+        assert(back === savedScreen, '恢复到第 ' + back + ' 屏，期望 ' + savedScreen + ' 屏');
+        return { restored: back };
+      });
+
+      t('排版变化：加大字号后仍回到同一处文字', () => {
+        document.documentElement.style.setProperty('--font-size', '30px');
+        const m2 = P.measure(viewport, columns, 1, 40);
+        const screen2 = P.screenOfCharOffset(viewport, content, m2, savedOffset);
+        assert(screen2 >= 0, '未能定位');
+        P.scrollToScreen(viewport, m2, screen2, false);
+        const offset2 = P.currentCharOffset(viewport, content);
+        assert(Math.abs(offset2 - savedOffset) < 400,
+          '位置漂移过大: ' + offset2 + ' vs ' + savedOffset);
+        return { screenAfterResize: screen2, offsetBefore: savedOffset, offsetAfter: offset2, screens: m2.screens };
+      });
+
+      t('多栏：2 栏时屏数为列数的一半且翻页按屏步进', () => {
+        document.documentElement.style.setProperty('--font-size', '18px');
+        const m = P.measure(viewport, columns, 2, 40);
+        assert(m.screens === Math.ceil(m.totalColumns / 2), '屏数计算错误');
+        P.scrollToScreen(viewport, m, 2, false);
+        const expected = 2 * 2 * (m.colW + m.gap);
+        assert(Math.abs(viewport.scrollLeft - expected) <= 2,
+          'scrollLeft=' + viewport.scrollLeft + ' 期望=' + expected);
+        return { totalColumns: m.totalColumns, screens: m.screens, colW: m.colW, step: P.screenStep(m) };
+      });
+
+      t('多栏：3 栏分屏正确', () => {
+        const m = P.measure(viewport, columns, 3, 40);
+        assert(m.screens === Math.ceil(m.totalColumns / 3), '屏数计算错误');
+        return { totalColumns: m.totalColumns, screens: m.screens };
+      });
+
+      t('边界：末屏不越界', () => {
+        const m = P.measure(viewport, columns, 1, 40);
+        P.scrollToScreen(viewport, m, m.screens - 1, false);
+        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+        assert(viewport.scrollLeft <= maxScroll + 4,
+          '越界 scrollLeft=' + viewport.scrollLeft + ' max=' + maxScroll);
+        return { lastScreenLeft: viewport.scrollLeft, maxScroll };
+      });
+
+      // ---------- 连续滚动模式 ----------
+      document.body.classList.add('mode-scroll');
+      document.documentElement.style.setProperty('--font-size', '18px');
+      columns.style.columnWidth = 'auto';
+      columns.style.columnGap = '0px';
+
+      let sv = null;
+      t('滚动模式：内容纵向溢出并算出多屏', () => {
+        sv = P.measureVertical(viewport);
+        assert(viewport.scrollHeight > viewport.clientHeight + 10,
+          '未纵向溢出 scrollHeight=' + viewport.scrollHeight + ' clientHeight=' + viewport.clientHeight);
+        assert(sv.screens > 2, '屏数过少: ' + sv.screens);
+        return { scrollHeight: viewport.scrollHeight, clientHeight: viewport.clientHeight, screens: sv.screens, step: sv.step };
+      });
+
+      t('滚动模式：翻屏落到正确的 scrollTop', () => {
+        P.scrollToScreen(viewport, sv, 3, false);
+        const expected = 3 * sv.step;
+        assert(Math.abs(viewport.scrollTop - expected) <= 2,
+          'scrollTop=' + viewport.scrollTop + ' 期望=' + expected);
+        return { scrollTop: viewport.scrollTop, expected };
+      });
+
+      let scrollOffset = -1;
+      t('滚动模式：能取到当前位置的字符偏移', () => {
+        scrollOffset = P.currentCharOffset(viewport, content);
+        assert(scrollOffset > 0, '偏移为 ' + scrollOffset + '，说明取样点落在留白里');
+        return { offset: scrollOffset };
+      });
+
+      t('滚动模式：滚走后按偏移能回到同一处文字', () => {
+        viewport.scrollTop = viewport.scrollHeight;
+        const docY = P.docYOf(viewport, P.rangeOfOffset(content, scrollOffset));
+        assert(docY >= 0, '未能定位 docY');
+        P.scrollToDocY(viewport, docY - 6, false);
+        const back = P.currentCharOffset(viewport, content);
+        assert(Math.abs(back - scrollOffset) < 400,
+          '位置漂移过大: ' + back + ' vs ' + scrollOffset);
+        return { offsetBefore: scrollOffset, offsetAfter: back, docY: +docY.toFixed(1) };
+      });
+
+      t('滚动模式：末屏不越界', () => {
+        P.scrollToScreen(viewport, sv, sv.screens - 1, false);
+        const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+        assert(viewport.scrollTop <= maxScroll + 4,
+          '越界 scrollTop=' + viewport.scrollTop + ' max=' + maxScroll);
+        return { lastScreenTop: viewport.scrollTop, maxScroll };
+      });
+
+      document.getElementById('result').textContent =
+        '@@RESULT@@' + JSON.stringify(results) + '@@END@@';
+    })();
+  </script>
+</body>
+
+</html>
